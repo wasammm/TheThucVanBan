@@ -3,12 +3,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const dropZone = document.getElementById('drop-zone');
     const fileNameDisplay = document.getElementById('file-name');
     const btnFormat = document.getElementById('btn-format');
+    const btnDownload = document.getElementById('btn-download');
     const docTypeSelect = document.getElementById('doc-type');
+    const progressContainer = document.getElementById('progress-container');
+    const progressList = document.getElementById('progress-list');
     const statusMsg = document.getElementById('status-message');
 
     let currentFile = null;
+    let formattedBlob = null;
+    let processedFileName = "";
 
-    // Xử lý sự kiện chọn file
+    const stepsTemplate = [
+        "Đọc và giải nén tệp Word (ZIP)",
+        "Áp dụng quy định font chữ & khoảng cách đoạn",
+        "Áp dụng cấu hình khổ giấy, lề trang & định dạng tiêu đề",
+        "Đóng gói tệp tin định dạng mới"
+    ];
+
+    // Tạo hiệu ứng trễ để UI kịp render trạng thái
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
             currentFile = e.target.files[0];
@@ -16,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Kéo thả file
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
         dropZone.classList.add('dragover');
@@ -43,6 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateFileInfo() {
         fileNameDisplay.textContent = `File đã chọn: ${currentFile.name}`;
         btnFormat.disabled = false;
+        btnDownload.style.display = 'none';
+        progressContainer.style.display = 'none';
         showMessage("", "");
     }
 
@@ -51,29 +66,62 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMsg.className = 'status-message ' + type;
     }
 
-    // Xử lý khi bấm nút định dạng
+    function initProgressUI() {
+        progressContainer.style.display = 'block';
+        progressList.innerHTML = '';
+        stepsTemplate.forEach((step, index) => {
+            const li = document.createElement('li');
+            li.id = `step-${index}`;
+            li.textContent = step;
+            progressList.appendChild(li);
+        });
+    }
+
+    function setStepStatus(stepIndex, status) {
+        const li = document.getElementById(`step-${stepIndex}`);
+        if (li) {
+            li.className = status; // active, success, error
+        }
+    }
+
+    // NÚT 1: ĐỊNH DẠNG
     btnFormat.addEventListener('click', async () => {
         if (!currentFile) return;
         
-        try {
-            btnFormat.disabled = true;
-            btnFormat.textContent = "Đang xử lý...";
-            showMessage("Đang đọc file...", "");
+        btnFormat.disabled = true;
+        btnDownload.style.display = 'none';
+        initProgressUI();
+        showMessage("", "");
 
-            // 1. Đọc file zip (docx)
+        let currentStep = 0;
+        try {
+            // Bước 0: Đọc tệp
+            setStepStatus(currentStep, 'active');
+            await sleep(500); 
             const zip = new JSZip();
             const loadedZip = await zip.loadAsync(currentFile);
-            
-            // 2. Chỉnh sửa styles.xml (Định dạng chữ, lùi đầu dòng, căn lề, khoảng cách dòng)
-            let stylesXml = await loadedZip.file("word/styles.xml").async("string");
+            setStepStatus(currentStep, 'success');
+            currentStep++;
+
+            // Bước 1: Xử lý styles.xml
+            setStepStatus(currentStep, 'active');
+            await sleep(500);
+            const stylesFile = loadedZip.file("word/styles.xml");
+            if (!stylesFile) throw new Error("Không tìm thấy cấu trúc styles chuẩn trong file Word này.");
+            let stylesXml = await stylesFile.async("string");
             stylesXml = applyGlobalStyles(stylesXml);
             loadedZip.file("word/styles.xml", stylesXml);
+            setStepStatus(currentStep, 'success');
+            currentStep++;
 
-            // 3. Chỉnh sửa document.xml (Khổ giấy, lề trang, tiêu đề TỜ TRÌNH, BÁO CÁO)
-            let docXml = await loadedZip.file("word/document.xml").async("string");
+            // Bước 2: Xử lý document.xml
+            setStepStatus(currentStep, 'active');
+            await sleep(500);
+            const docFile = loadedZip.file("word/document.xml");
+            if (!docFile) throw new Error("Không tìm thấy nội dung văn bản chuẩn trong file Word này.");
+            let docXml = await docFile.async("string");
             
             let selectedType = docTypeSelect.value;
-            // Nếu AUTO, thử tìm từ khóa
             if(selectedType === "AUTO") {
                 if(docXml.includes("TỜ TRÌNH") || docXml.includes("Tờ trình") || docXml.includes("tờ trình")) selectedType = "TO_TRINH";
                 else if(docXml.includes("BÁO CÁO") || docXml.includes("Báo cáo") || docXml.includes("báo cáo")) selectedType = "BAO_CAO";
@@ -83,40 +131,49 @@ document.addEventListener('DOMContentLoaded', () => {
             docXml = applyPageSetup(docXml);
             docXml = applySpecificRules(docXml, selectedType);
             loadedZip.file("word/document.xml", docXml);
+            setStepStatus(currentStep, 'success');
+            currentStep++;
 
-            // 4. Đóng gói lại file và tải xuống
-            showMessage("Đang tạo file chuẩn...", "");
-            const outBlob = await loadedZip.generateAsync({ type: "blob" });
+            // Bước 3: Đóng gói
+            setStepStatus(currentStep, 'active');
+            await sleep(500);
+            formattedBlob = await loadedZip.generateAsync({ type: "blob" });
+            processedFileName = currentFile.name.replace('.docx', '_DaDinhDang.docx');
+            setStepStatus(currentStep, 'success');
+
+            showMessage("Định dạng hoàn tất! Bạn có thể tải file về.", "success");
+            btnFormat.textContent = "Định dạng lại";
+            btnFormat.disabled = false;
             
-            const newName = currentFile.name.replace('.docx', '_DaDinhDang.docx');
-            saveAs(outBlob, newName);
+            // Hiển thị nút tải xuống
+            btnDownload.style.display = 'block';
 
-            showMessage(`Thành công! Đã tải xuống file: ${newName}`, "success");
         } catch (error) {
             console.error(error);
-            showMessage("Có lỗi xảy ra trong quá trình xử lý file.", "error");
-        } finally {
+            setStepStatus(currentStep, 'error');
+            showMessage(`Lỗi tại bước ${currentStep + 1}: ${error.message || 'Lỗi không xác định'}`, "error");
             btnFormat.disabled = false;
-            btnFormat.textContent = "Định dạng & Tải xuống";
+            btnFormat.textContent = "Thử lại";
+        }
+    });
+
+    // NÚT 2: TẢI XUỐNG
+    btnDownload.addEventListener('click', () => {
+        if (formattedBlob && processedFileName) {
+            saveAs(formattedBlob, processedFileName);
         }
     });
 
     // --- Các hàm Core Logic xử lý XML của file Docx ---
 
     function applyGlobalStyles(xml) {
-        // Can thiệp vào Defaults của styles.xml
-        // 1. Font Times New Roman, Size 28 (14pt)
         const fontDefault = `<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman" w:eastAsia="Times New Roman"/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr>`;
-        
-        // 2. Canh đều hai bên (both), lùi đầu dòng 1.27cm (720 twips), khoảng cách dòng 1.5 (360 twips)
         const paraDefault = `<w:pPr><w:jc w:val="both"/><w:spacing w:line="360" w:lineRule="auto"/><w:ind w:firstLine="720"/></w:pPr>`;
 
-        // Chèn vào docDefaults
         if (xml.includes('<w:docDefaults>')) {
             xml = xml.replace(/<w:rPrDefault>.*?<\/w:rPrDefault>/, `<w:rPrDefault>${fontDefault}</w:rPrDefault>`);
             xml = xml.replace(/<w:pPrDefault>.*?<\/w:pPrDefault>/, `<w:pPrDefault>${paraDefault}</w:pPrDefault>`);
         } else {
-            // Nếu chưa có docDefaults, thêm vào đầu
             const defaults = `<w:docDefaults><w:rPrDefault>${fontDefault}</w:rPrDefault><w:pPrDefault>${paraDefault}</w:pPrDefault></w:docDefaults>`;
             xml = xml.replace(/<w:styles[^>]*>/, `$&${defaults}`);
         }
@@ -124,19 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function applyPageSetup(xml) {
-        // Thiết lập khổ A4 (w:w="11906" w:h="16838")
         xml = xml.replace(/<w:pgSz[^>]*\/>/g, '<w:pgSz w:w="11906" w:h="16838"/>');
-        
-        // Thiết lập lề: Trên 20mm (1134), Dưới 20mm (1134), Trái 30mm (1701), Phải 15mm (850)
         xml = xml.replace(/<w:pgMar[^>]*\/>/g, '<w:pgMar w:top="1134" w:right="850" w:bottom="1134" w:left="1701" w:header="708" w:footer="708" w:gutter="0"/>');
         return xml;
     }
 
     function applySpecificRules(xml, docType) {
-        // Hàm này quét qua các thẻ paragraph <w:p>
-        // Vì làm việc với XML bằng regex rất phức tạp, ta dùng thao tác string đơn giản để nhận diện chữ
-        
-        // Nhận diện "BÁO CÁO" hoặc "TỜ TRÌNH" để in hoa, in đậm, canh giữa, KHÔNG lùi đầu dòng
         if (docType === "BAO_CAO" || docType === "TO_TRINH") {
             const keyword1 = docType === "BAO_CAO" ? "BÁO CÁO" : "TỜ TRÌNH";
             const keyword2 = docType === "BAO_CAO" ? "Báo cáo" : "Tờ trình";
@@ -144,11 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let paragraphs = xml.split('</w:p>');
             for (let i = 0; i < paragraphs.length; i++) {
                 if (paragraphs[i].includes(keyword1) || paragraphs[i].includes(keyword2)) {
-                    // Nếu là đoạn chứa tiêu đề, ép định dạng
-                    // Thêm thuộc tính pPr: canh giữa (center), không lùi đầu dòng (ind left=0 firstLine=0)
                     let pPr = `<w:pPr><w:jc w:val="center"/><w:ind w:left="0" w:firstLine="0"/></w:pPr>`;
-                    
-                    // Thêm thuộc tính rPr: in đậm, in hoa
                     paragraphs[i] = paragraphs[i].replace(/<w:rPr>/g, '<w:rPr><w:b/><w:caps/>');
                     
                     if (paragraphs[i].includes('<w:pPr>')) {
@@ -160,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             xml = paragraphs.join('</w:p>');
         }
-
         return xml;
     }
 });

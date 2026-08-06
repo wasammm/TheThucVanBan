@@ -12,6 +12,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    padding: 20px;
 }
 
 .container {
@@ -31,7 +32,7 @@ header {
 }
 
 header h1 {
-    color: #00529c; /* Màu xanh EVN */
+    color: #00529c;
     font-size: 24px;
     margin-bottom: 8px;
 }
@@ -103,12 +104,13 @@ header p {
 }
 
 .action-section {
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
-.btn-primary {
-    background-color: #00529c;
-    color: white;
+button {
     border: none;
     padding: 14px 30px;
     font-size: 16px;
@@ -117,6 +119,11 @@ header p {
     width: 100%;
     font-weight: bold;
     transition: 0.3s;
+}
+
+.btn-primary {
+    background-color: #00529c;
+    color: white;
 }
 
 .btn-primary:disabled {
@@ -128,13 +135,66 @@ header p {
     background-color: #003e77;
 }
 
+.btn-success {
+    background-color: #28a745;
+    color: white;
+    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+/* Thanh trạng thái mới */
+.progress-container {
+    background-color: #f8fbff;
+    border: 1px solid #cce5ff;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.progress-container h4 {
+    color: #00529c;
+    margin-bottom: 12px;
+    font-size: 15px;
+}
+
+.progress-list {
+    list-style: none;
+}
+
+.progress-list li {
+    padding: 8px 0;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    color: #555;
+}
+
+.progress-list li::before {
+    content: '⏳';
+    margin-right: 12px;
+    font-size: 16px;
+}
+
+.progress-list li.active { color: #00529c; font-weight: bold; }
+.progress-list li.active::before { content: '🔄'; display: inline-block; animation: spin 2s linear infinite; }
+.progress-list li.success { color: #28a745; font-weight: bold; }
+.progress-list li.success::before { content: '✅'; animation: none; }
+.progress-list li.error { color: #dc3545; font-weight: bold; }
+.progress-list li.error::before { content: '❌'; animation: none; }
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
 .status-message {
     margin-top: 15px;
     text-align: center;
     font-weight: bold;
     min-height: 20px;
 }
-
 .success { color: #28a745; }
 .error { color: #dc3545; }
 

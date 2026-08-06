@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EVN - Định Dạng Văn Bản Chuẩn</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Nạp JSZip và FileSaver từ CDN để xử lý file Word trực tiếp trên trình duyệt -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
@@ -37,9 +36,17 @@
             </div>
 
             <div class="action-section">
-                <button id="btn-format" class="btn-primary" disabled>Định dạng & Tải xuống</button>
+                <button id="btn-format" class="btn-primary" disabled>Bắt đầu Định dạng</button>
+                <button id="btn-download" class="btn-success" style="display: none;">Tải file hoàn tất ⬇️</button>
             </div>
             
+            <div class="progress-container" id="progress-container" style="display: none;">
+                <h4>Trạng thái xử lý:</h4>
+                <ul class="progress-list" id="progress-list">
+                    <!-- Danh sách các bước sẽ được Javascript tạo động tại đây -->
+                </ul>
+            </div>
+
             <div id="status-message" class="status-message"></div>
         </main>
         
