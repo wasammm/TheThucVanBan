@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVN - Định Dạng Văn Bản Chuẩn</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Nạp JSZip và FileSaver từ CDN để xử lý file Word trực tiếp trên trình duyệt -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Hệ thống Định dạng Văn bản Hành chính</h1>
+            <p>Tự động chuẩn hóa Tờ trình, Báo cáo, Công văn theo thể thức EVN</p>
+        </header>
+
+        <main>
+            <div class="upload-section" id="drop-zone">
+                <input type="file" id="file-input" accept=".docx" hidden>
+                <div class="upload-icon">📄</div>
+                <h3>Kéo thả file Word (.docx) vào đây</h3>
+                <p>hoặc</p>
+                <button class="btn-select" onclick="document.getElementById('file-input').click()">Chọn file từ máy tính</button>
+                <p id="file-name" class="file-name"></p>
+            </div>
+
+            <div class="options-section">
+                <label for="doc-type">Loại văn bản:</label>
+                <select id="doc-type">
+                    <option value="AUTO">Tự động nhận diện</option>
+                    <option value="CONG_VAN">Công văn</option>
+                    <option value="TO_TRINH">Tờ trình</option>
+                    <option value="BAO_CAO">Báo cáo</option>
+                </select>
+            </div>
+
+            <div class="action-section">
+                <button id="btn-format" class="btn-primary" disabled>Định dạng & Tải xuống</button>
+            </div>
+            
+            <div id="status-message" class="status-message"></div>
+        </main>
+        
+        <footer>
+            <p>Công cụ hoạt động offline 100% trên trình duyệt. Không tải dữ liệu lên máy chủ.</p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
