@@ -182,7 +182,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function applyPageSetup(xml) {
         xml = xml.replace(/<w:pgSz[^>]*\/>/g, '<w:pgSz w:w="11906" w:h="16838"/>');
-        xml = xml.replace(/<w:pgMar[^>]*\/>/g, '<w:pgMar w:top="1134" w:right="850" w:bottom="1134" w:left="1701" w:header="708" w:footer="708" w:gutter="0"/>');
+        // w:right="1134" tương đương 20mm (20 * 56.7 twips)
+        xml = xml.replace(/<w:pgMar[^>]*\/>/g, '<w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1701" w:header="708" w:footer="708" w:gutter="0"/>');
         return xml;
     }
 
