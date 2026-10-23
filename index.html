@@ -1,59 +1,289 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EVN - Định Dạng Văn Bản Chuẩn</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chuẩn hóa thể thức văn bản – QĐ 739/QĐ-EVN</title>
+<style>
+:root{--ink:#1c2733;--mut:#5d6b78;--line:#d5dbe1;--bg:#eef1f4;--card:#fff;--acc:#17575f;--acc2:#0f3f45;--warn:#8a5a00;--warnbg:#fff6df}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 "Be Vietnam Pro","Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+header{padding:18px 24px;background:var(--acc2);color:#fff}
+header h1{margin:0;font-size:19px;font-weight:600}
+header p{margin:2px 0 0;font-size:13px;opacity:.8}
+main{display:grid;grid-template-columns:minmax(340px,430px) 1fr;gap:18px;padding:18px;align-items:start}
+@media(max-width:980px){main{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:16px}
+.panel h2{margin:0 0 10px;font-size:15px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid .full{grid-column:1/-1}
+label{display:block;font-size:12.5px;color:var(--mut);margin-bottom:3px}
+input,select,textarea{width:100%;font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+textarea{resize:vertical;min-height:60px}
+#body{min-height:210px;font-family:"Times New Roman",serif;font-size:15px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button{font:inherit;padding:8px 14px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer}
+button.sec{background:#fff;color:var(--acc)}
+button:hover{filter:brightness(1.08)}
+details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-weight:600}
+#warn{margin-top:12px;font-size:13px}
+#warn div{background:var(--warnbg);color:var(--warn);padding:6px 10px;border-radius:4px;margin-bottom:5px}
+#warn .ok{background:#e6f3ee;color:#1b5b43}
+.sheetwrap{overflow:auto;padding:4px}
+#paper{width:210mm;min-height:297mm;margin:0 auto;background:#fff;padding:20mm 20mm 20mm 30mm;box-shadow:0 1px 8px rgba(0,0,0,.18);font:14pt/1.3 "Times New Roman",Times,serif;color:#000}
+#paper p{margin:0 0 6pt;text-align:justify}
+#paper .ind{text-indent:1.27cm}
+#paper .c{text-align:center}
+#paper .b{font-weight:700}
+#paper .i{font-style:italic}
+#paper table{width:100%;border-collapse:collapse}
+#paper td{vertical-align:top;padding:0}
+#paper .ln{height:0;border-top:1px solid #000;margin:2px auto 4px}
+#paper .u{display:inline-block;border-bottom:1px solid #000;padding-bottom:1px}
+.note{font-size:12.5px;color:var(--mut);margin:8px 4px 0;text-align:center}
+@media print{
+ body *{visibility:hidden}
+ #paper,#paper *{visibility:visible}
+ #paper{position:absolute;left:0;top:0;width:auto;min-height:0;margin:0;padding:0;box-shadow:none}
+ @page{size:A4;margin:20mm 20mm 20mm 30mm;@top-center{content:counter(page);font:13pt "Times New Roman"}}
+ @page:first{@top-center{content:none}}
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Hệ thống Định dạng Văn bản Hành chính</h1>
-            <p>Tự động chuẩn hóa Tờ trình, Báo cáo, Công văn theo thể thức EVN</p>
-        </header>
+<header>
+ <h1>Chuẩn hóa thể thức văn bản hành chính</h1>
+ <p>Theo Quyết định 739/QĐ-EVN ngày 10/5/2022 · xuất Word (.docx) hoặc PDF</p>
+</header>
+<main>
+<section class="panel">
+ <h2>1. Văn bản cần chuẩn hóa</h2>
+ <label for="file">Mở file Word (.docx) hoặc văn bản thuần (.txt)</label>
+ <input type="file" id="file" accept=".docx,.txt">
+ <label for="body" style="margin-top:10px">Hoặc dán nội dung vào đây</label>
+ <textarea id="body" placeholder="Dán toàn bộ văn bản. Các dòng Quốc hiệu, V/v, Kính gửi, tên loại, trích yếu sẽ được nhận diện và điền vào mục 2."></textarea>
+ <div class="row"><button id="detect">Nhận diện thông tin đầu văn bản</button></div>
 
-        <main>
-            <div class="upload-section" id="drop-zone">
-                <input type="file" id="file-input" accept=".docx" hidden>
-                <div class="upload-icon">📄</div>
-                <h3>Kéo thả file Word (.docx) vào đây</h3>
-                <p>hoặc</p>
-                <button class="btn-select" onclick="document.getElementById('file-input').click()">Chọn file từ máy tính</button>
-                <p id="file-name" class="file-name"></p>
-            </div>
+ <h2 style="margin-top:18px">2. Thông tin thể thức</h2>
+ <div class="grid">
+  <div><label for="loai">Tên loại văn bản</label><select id="loai"></select></div>
+  <div><label for="so">Số văn bản</label><input id="so" placeholder="vd: 5"></div>
+  <div class="full"><label for="chuquan">Cơ quan chủ quản trực tiếp</label><input id="chuquan"></div>
+  <div class="full"><label for="donvi">Tên đơn vị ban hành</label><input id="donvi"></div>
+  <div><label for="vt">Viết tắt đơn vị</label><input id="vt"></div>
+  <div><label for="tcn">Viết tắt Ban/Phòng soạn thảo</label><input id="tcn"></div>
+  <div><label for="dd">Địa danh</label><input id="dd"></div>
+  <div><label for="ngay">Ngày ban hành</label><input type="date" id="ngay"></div>
+  <div class="full"><label for="ty">Trích yếu nội dung</label><input id="ty"></div>
+  <div class="full" id="kgbox"><label for="kg">Kính gửi (mỗi nơi một dòng)</label><textarea id="kg" rows="2"></textarea></div>
+ </div>
 
-            <div class="options-section">
-                <label for="doc-type">Loại văn bản:</label>
-                <select id="doc-type">
-                    <option value="AUTO">Tự động nhận diện</option>
-                    <option value="CONG_VAN">Công văn</option>
-                    <option value="TO_TRINH">Tờ trình</option>
-                    <option value="BAO_CAO">Báo cáo</option>
-                </select>
-            </div>
+ <h2 style="margin-top:18px">3. Người ký và nơi nhận</h2>
+ <div class="grid">
+  <div><label for="quyen">Quyền hạn khi ký</label>
+   <select id="quyen"><option value="">Ký trực tiếp</option><option>TM.</option><option>KT.</option><option>TL.</option><option>TUQ.</option><option>Q.</option></select></div>
+  <div><label for="cv1">Chức vụ người đứng đầu</label><input id="cv1" placeholder="vd: GIÁM ĐỐC"></div>
+  <div><label for="cv2">Chức vụ người ký</label><input id="cv2" placeholder="vd: PHÓ GIÁM ĐỐC"></div>
+  <div><label for="ht">Họ và tên người ký</label><input id="ht"></div>
+  <div class="full"><label for="nn">Nơi nhận (mỗi nơi một dòng, không cần gạch đầu dòng)</label><textarea id="nn" rows="3"></textarea></div>
+  <div><label for="sb">Số bản lưu (nếu cần)</label><input id="sb" placeholder="vd: 02"></div>
+ </div>
+ <div id="warn"></div>
+ <div class="row">
+  <button id="dl">Tải file Word</button>
+  <button id="pr" class="sec">In / Lưu PDF</button>
+ </div>
+ <details>
+  <summary>Chương trình tự sửa những gì</summary>
+  <p style="font-size:13px;color:var(--mut)">Khổ A4, lề trên/dưới 20 mm, trái 30 mm, phải 20 mm; Times New Roman 14. Số dưới 10 và ngày, tháng 1–2 được thêm số 0. Căn cứ in nghiêng, kết thúc bằng “;” và “.”. Điều, Chương, Mục viết hoa khi viện dẫn; khoản, điểm viết thường. Nơi nhận có dòng “Lưu: VT, …”. Số trang bắt đầu từ trang 2.</p>
+ </details>
+</section>
 
-            <div class="action-section">
-                <button id="btn-format" class="btn-primary" disabled>Bắt đầu Định dạng</button>
-                <button id="btn-download" class="btn-success" style="display: none;">Tải file hoàn tất ⬇️</button>
-            </div>
-            
-            <div class="progress-container" id="progress-container" style="display: none;">
-                <h4>Trạng thái xử lý:</h4>
-                <ul class="progress-list" id="progress-list">
-                    <!-- Danh sách các bước sẽ được Javascript tạo động tại đây -->
-                </ul>
-            </div>
+<section>
+ <div class="sheetwrap"><div id="paper"></div></div>
+ <p class="note">Bản xem trước hiển thị liền mạch; ngắt trang chính xác theo file Word hoặc bản in. Hãy đọc lại trước khi ký.</p>
+</section>
+</main>
 
-            <div id="status-message" class="status-message"></div>
-        </main>
-        
-        <footer>
-            <p>Công cụ hoạt động offline 100% trên trình duyệt. Không tải dữ liệu lên máy chủ.</p>
-        </footer>
-    </div>
-    <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<script>
+const TYPES={'Công văn':'','Quyết định':'QĐ','Tờ trình':'TTr','Báo cáo':'BC','Thông báo':'TB','Kế hoạch':'KH','Chỉ thị':'CT','Quy chế':'QC','Quy định':'QyĐ','Hướng dẫn':'HD','Chương trình':'CTr','Phương án':'PA','Công điện':'CĐ'};
+const KG=['Công văn','Tờ trình','Báo cáo'];
+const $=id=>document.getElementById(id);
+const IDS=['loai','so','chuquan','donvi','vt','tcn','dd','ngay','ty','kg','quyen','cv1','cv2','ht','nn','sb'];
+const DEF={loai:'Công văn',chuquan:'TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM',donvi:'CÔNG TY ĐIỆN LỰC AN GIANG',vt:'PCAG',tcn:'TCNS',dd:'An Giang',quyen:'KT.',cv1:'GIÁM ĐỐC',cv2:'PHÓ GIÁM ĐỐC'};
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const up=s=>s.toUpperCase();
+
+/* ---------- khởi tạo ---------- */
+$('loai').innerHTML=Object.keys(TYPES).map(k=>`<option>${k}</option>`).join('');
+let saved={};try{saved=JSON.parse(localStorage.getItem('tt739')||'{}')}catch(e){}
+IDS.forEach(id=>{$(id).value=saved[id]??DEF[id]??''});
+if(!$('ngay').value)$('ngay').value=new Date().toISOString().slice(0,10);
+
+/* ---------- xử lý văn bản ---------- */
+function fix(s){
+ return s.replace(/\s+/g,' ').replace(/\s+([,;.:!?])/g,'$1')
+  .replace(/(?<![\p{L}])(điều|chương|mục)\s+(\d+|[IVXLC]+)(?![\p{L}\d])/giu,(m,a,b)=>/^(\d+|[IVXLC]+)$/.test(b)?a[0].toUpperCase()+a.slice(1).toLowerCase()+' '+b:m)
+  .replace(/(?<![\p{L}])(Khoản|Điểm)\s+(\d+|[a-zđ])(?![\p{L}\d])/gu,(m,a,b)=>a.toLowerCase()+' '+b).trim();
+}
+function blocks(t){
+ const L=t.split(/\n/).map(fix).filter(Boolean).filter(x=>!/^CỘNG HÒA XÃ HỘI|^Độc lập\s*-/i.test(x));
+ const out=[],warn=[];
+ for(let i=0;i<L.length;i++){
+  let s=L[i];
+  if(/^(Chương|Phần)\s+[IVXLC\d]+\.?$/i.test(s)){
+   out.push({k:'c',t:s[0].toUpperCase()+s.slice(1).replace(/\.$/,'')});
+   if(L[i+1]&&L[i+1].length<90&&!/^(Điều|Chương|Phần)\s/i.test(L[i+1]))out.push({k:'c',t:up(L[++i])});
+   continue;}
+  if(/^(QUYẾT ĐỊNH|QUYẾT NGHỊ)\s*:?$/i.test(s)){out.push({k:'c',t:up(s.replace(/:$/,''))+':'});continue}
+  if(/^Điều\s+\d+/i.test(s)){out.push({k:'d',t:s.replace(/^Điều\s+(\d+)\s*[.:]?\s*/i,'Điều $1. ')});continue}
+  if(/^(Căn cứ|Theo đề nghị|Xét đề nghị)/i.test(s)){out.push({k:'cc',t:s.replace(/[.;,:]+$/,'')});continue}
+  if(/^[fjwz]\)/i.test(s))warn.push('Điểm “'+s.slice(0,2)+'” dùng chữ cái không có trong bảng chữ cái đánh điểm (bỏ f, j, w, z).');
+  out.push({k:'p',t:s});
+ }
+ out.forEach((o,i)=>{if(o.k==='cc')o.t+=(out[i+1]&&out[i+1].k==='cc')?';':'.'});
+ return{out,warn};
+}
+const pad=n=>n<10?'0'+n:''+n;
+function state(){
+ const s={};IDS.forEach(id=>s[id]=$(id).value.trim());
+ s.body=$('body').value;
+ const d=s.ngay?s.ngay.split('-').map(Number):null;
+ s.date=d?`ngày ${pad(d[2])} tháng ${d[1]<3?pad(d[1]):d[1]} năm ${d[0]}`:'ngày … tháng … năm …';
+ s.dateline=(s.dd||'…')+', '+s.date;
+ const n=parseInt(s.so,10);
+ s.sohieu='Số: '+(s.so?(isNaN(n)?s.so:pad(n)):'…')+'/'+(s.loai==='Công văn'?[s.vt,s.tcn].filter(Boolean).join('-'):[TYPES[s.loai],s.vt].filter(Boolean).join('-'));
+ s.vv='V/v '+s.ty.replace(/^V\/v\s*/i,'');
+ s.kgL=s.kg.split(/\n/).map(x=>x.trim().replace(/^[-–]\s*/,'').replace(/[;.]$/,'')).filter(Boolean);
+ let nn=s.nn.split(/\n/).map(x=>x.trim().replace(/^[-–]\s*/,'').replace(/[;.]$/,'')).filter(Boolean);
+ if(KG.includes(s.loai)&&s.loai==='Công văn'&&!nn.some(x=>/^Như trên/i.test(x)))nn.unshift('Như trên');
+ nn=nn.filter(x=>!/^Lưu\s*:/i.test(x));
+ nn.push('Lưu: VT, '+[s.tcn,s.sb].filter(Boolean).join(', ')||'VT');
+ s.nnL=nn;
+ s.sig=[];
+ if(!s.quyen)s.sig=[up(s.cv2||s.cv1)];
+ else if(s.quyen==='Q.')s.sig=[('Q. '+up(s.cv1)).trim()];
+ else s.sig=[(s.quyen+' '+up(s.cv1)).trim(),up(s.cv2)].filter(Boolean);
+ return s;
+}
+const hasTitle=s=>s.loai!=='Công văn';
+
+/* ---------- xem trước ---------- */
+function render(){
+ const s=state(),{out,warn}=blocks(s.body);
+ $('kgbox').style.display=KG.includes(s.loai)?'':'none';
+ let h=`<table><tr><td style="width:42%;text-align:center;font-size:13pt">
+ <div>${esc(up(s.chuquan))}</div><div class="b">${esc(up(s.donvi))}</div><div class="ln" style="width:40%"></div>
+ <div style="font-size:13pt">${esc(s.sohieu)}</div>${hasTitle(s)?'':`<div style="font-size:12.5pt;margin-top:6pt">${esc(s.vv)}</div>`}</td>
+ <td style="text-align:center"><div class="b" style="font-size:13pt">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+ <div class="b"><span class="u">Độc lập - Tự do - Hạnh phúc</span></div>
+ <div class="i" style="margin-top:8pt">${esc(s.dateline)}</div></td></tr></table>`;
+ if(hasTitle(s))h+=`<p class="c b" style="margin-top:14pt;margin-bottom:0">${esc(up(s.loai))}</p><p class="c b" style="margin-bottom:0">${esc(s.ty||'…')}</p><div class="ln" style="width:30%;margin-bottom:10pt"></div>`;
+ else h+='<div style="height:14pt"></div>';
+ if(KG.includes(s.loai)&&s.kgL.length){
+  h+=s.kgL.length===1?`<p class="c" style="text-align:center">Kính gửi: ${esc(s.kgL[0])}</p>`
+   :`<table style="margin:0 0 6pt 3.2cm;width:auto"><tr><td>Kính gửi:&nbsp;</td><td>${s.kgL.map((x,i)=>'- '+esc(x)+(i<s.kgL.length-1?';':'.')).join('<br>')}</td></tr></table>`;}
+ out.forEach(o=>{h+=o.k==='c'?`<p class="c b">${esc(o.t)}</p>`:o.k==='d'?`<p class="ind b">${esc(o.t)}</p>`:o.k==='cc'?`<p class="ind i">${esc(o.t)}</p>`:`<p class="ind">${esc(o.t)}</p>`});
+ h+=`<table style="margin-top:8pt;page-break-inside:avoid"><tr><td style="width:50%;font-size:11pt"><div class="b i" style="font-size:12pt">Nơi nhận:</div>
+ ${s.nnL.map((x,i)=>'- '+esc(x)+(i<s.nnL.length-1?';':'.')).join('<br>')}</td>
+ <td style="text-align:center" class="b">${s.sig.map(esc).join('<br>')}<div style="height:3.4cm"></div>${esc(s.ht)}</td></tr></table>`;
+ $('paper').innerHTML=h;
+ const w=[...warn];
+ if(!s.ty)w.push('Chưa có trích yếu nội dung.');
+ if(!s.so)w.push('Chưa nhập số văn bản (đang hiện dấu “…”).');
+ if(!s.ht)w.push('Chưa nhập họ tên người ký.');
+ if(KG.includes(s.loai)&&!s.kgL.length)w.push(s.loai+' cần có phần “Kính gửi”.');
+ if(s.loai==='Quyết định'&&!out.some(o=>o.k==='cc'))w.push('Quyết định cần có phần căn cứ ban hành (dòng bắt đầu bằng “Căn cứ”).');
+ if(s.quyen&&s.quyen!=='Q.'&&!s.cv2)w.push('Đã chọn '+s.quyen+' nhưng chưa nhập chức vụ người ký.');
+ $('warn').innerHTML=w.length?w.map(x=>`<div>${esc(x)}</div>`).join(''):'<div class="ok">Chưa phát hiện thiếu sót về thể thức.</div>';
+ try{const o={};IDS.forEach(id=>o[id]=$(id).value);localStorage.setItem('tt739',JSON.stringify(o))}catch(e){}
+}
+let tm;const later=()=>{clearTimeout(tm);tm=setTimeout(render,150)};
+[...IDS,'body'].forEach(id=>{$(id).addEventListener('input',later);$(id).addEventListener('change',later)});
+
+/* ---------- nhận diện đầu văn bản ---------- */
+$('detect').onclick=()=>{
+ let L=$('body').value.split(/\n/).map(x=>x.trim()).filter(Boolean),keep=[];
+ for(let i=0;i<L.length;i++){
+  const x=L[i];let m;
+  if(i>25){keep.push(x);continue}
+  if(/^CỘNG HÒA XÃ HỘI|^Độc lập\s*-|^Số\s*:|^[^,]{2,25},\s*ngày\s+\d/i.test(x))continue;
+  if((m=x.match(/^V\/v\s*:?\s*(.*)/i))){$('ty').value=m[1];$('loai').value='Công văn';continue}
+  if((m=x.match(/^Kính gửi\s*:?\s*(.*)/i))){
+   const v=[];if(m[1])v.push(m[1]);
+   while(L[i+1]&&/^[-–]/.test(L[i+1]))v.push(L[++i].replace(/^[-–]\s*/,''));
+   $('kg').value=v.join('\n');continue}
+  const t=Object.keys(TYPES).find(k=>up(k)===up(x));
+  if(t&&t!=='Công văn'){$('loai').value=t;if(L[i+1]&&L[i+1].length<160)$('ty').value=L[++i].replace(/^Về việc\s*/i,'Về việc ');continue}
+  keep.push(x);
+ }
+ $('body').value=keep.join('\n');render();
+};
+
+/* ---------- mở file ---------- */
+$('file').onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
+ try{
+  let txt;
+  if(/\.docx$/i.test(f.name))txt=(await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()})).value;
+  else txt=await f.text();
+  $('body').value=txt.replace(/\n{2,}/g,'\n');render();
+ }catch(err){alert('Không đọc được file. Hãy thử lưu lại dạng .docx hoặc dán nội dung trực tiếp.')}
+};
+
+/* ---------- xuất Word ---------- */
+function buildDoc(){
+ const D=docx,F='Times New Roman',s=state(),{out}=blocks(s.body);
+ const run=(t,o={})=>new D.TextRun({text:t,font:F,size:o.sz||28,bold:o.b,italics:o.i});
+ const none={style:D.BorderStyle.NONE,size:0,color:'FFFFFF'};
+ const nb={top:none,bottom:none,left:none,right:none};
+ const line=(w,tot)=>({border:{bottom:{style:D.BorderStyle.SINGLE,size:6,space:1,color:'000000'}},indent:{left:Math.round((tot-w)/2),right:Math.round((tot-w)/2)}});
+ const P=(t,o={})=>new D.Paragraph({alignment:o.al||D.AlignmentType.JUSTIFIED,spacing:{after:o.after??120,before:o.before||0,line:312},indent:o.ind===false?undefined:{firstLine:720},keepNext:o.kn,...(o.extra||{}),children:Array.isArray(t)?t:[run(t,o)]});
+ const C=D.AlignmentType.CENTER;
+ const cell=(w,ch)=>new D.TableCell({width:{size:w,type:D.WidthType.DXA},borders:nb,children:ch});
+ const tbl=(cols,rows)=>new D.Table({width:{size:9071,type:D.WidthType.DXA},columnWidths:cols,borders:{...nb,insideHorizontal:none,insideVertical:none},rows:[new D.TableRow({children:rows})]});
+ const LW=3800,RW=5271,ch=[];
+ const left=[P(up(s.chuquan),{al:C,ind:false,after:0,sz:26}),P(up(s.donvi),{al:C,ind:false,after:0,sz:26,b:true}),
+  P('',{ind:false,after:60,sz:4,extra:line(1500,LW)}),P(s.sohieu,{al:C,ind:false,after:60,sz:26})];
+ if(!hasTitle(s))left.push(P(s.vv,{al:C,ind:false,before:120,sz:25}));
+ const right=[P('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM',{al:C,ind:false,after:0,sz:26,b:true}),
+  P('Độc lập - Tự do - Hạnh phúc',{al:C,ind:false,after:0,b:true,extra:line(3900,RW)}),
+  P(s.dateline,{al:C,ind:false,before:160,i:true})];
+ ch.push(tbl([LW,RW],[cell(LW,left),cell(RW,right)]));
+ if(hasTitle(s)){
+  const w=Math.min(8800,(s.ty||'').length*145);
+  ch.push(P(up(s.loai),{al:C,ind:false,before:280,after:0,b:true}),P(s.ty||'…',{al:C,ind:false,after:60,b:true}),
+   P('',{ind:false,after:200,sz:4,extra:line(Math.max(1800,Math.round(w*.4)),9071)}));
+ }else ch.push(P('',{ind:false,after:120}));
+ if(KG.includes(s.loai)&&s.kgL.length){
+  if(s.kgL.length===1)ch.push(P('Kính gửi: '+s.kgL[0],{al:C,ind:false}));
+  else s.kgL.forEach((x,i)=>ch.push(P((i?'':'Kính gửi: ')+'- '+x+(i<s.kgL.length-1?';':'.'),{al:D.AlignmentType.LEFT,ind:false,after:40,extra:{indent:{left:i?1900:1000}}})));
+ }
+ out.forEach(o=>ch.push(o.k==='c'?P(o.t,{al:C,ind:false,b:true,kn:true,after:60}):o.k==='d'?P(o.t,{b:true,kn:true}):o.k==='cc'?P(o.t,{i:true}):P(o.t)));
+ const nl=[P('Nơi nhận:',{al:D.AlignmentType.LEFT,ind:false,after:0,b:true,i:true,sz:24}),
+  ...s.nnL.map((x,i)=>P('- '+x+(i<s.nnL.length-1?';':'.'),{al:D.AlignmentType.LEFT,ind:false,after:0,sz:22}))];
+ const sg=[...s.sig.map(x=>P(x,{al:C,ind:false,after:0,b:true})),...Array(5).fill(0).map(()=>P('',{ind:false,after:0})),P(s.ht,{al:C,ind:false,b:true})];
+ ch.push(P('',{ind:false,after:60}),tbl([4500,4571],[cell(4500,nl),cell(4571,sg)]));
+ return new D.Document({
+  styles:{default:{document:{run:{font:F,size:28}}}},
+  sections:[{properties:{titlePage:true,page:{size:{width:11906,height:16838},margin:{top:1134,bottom:1134,left:1701,right:1134,header:567}}},
+   headers:{default:new D.Header({children:[new D.Paragraph({alignment:C,children:[new D.TextRun({children:[D.PageNumber.CURRENT],font:F,size:26})]})]}),first:new D.Header({children:[new D.Paragraph('')]})},
+   children:ch}]});
+}
+$('dl').onclick=async()=>{
+ if(!window.docx){alert('Chưa tải được thư viện xuất Word. Kiểm tra kết nối mạng rồi thử lại.');return}
+ const s=state();
+ const blob=await docx.Packer.toBlob(buildDoc());
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+ a.download=(s.sohieu.replace(/^Số:\s*/,'').replace(/[\/\\…]/g,'_')||'van-ban')+'.docx';
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+};
+$('pr').onclick=()=>window.print();
+render();
+</script>
 </body>
 </html>
