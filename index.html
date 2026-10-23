@@ -32,7 +32,7 @@ summary{cursor:pointer;font-weight:600}
 #warn div{background:var(--warnbg);color:var(--warn);padding:6px 10px;border-radius:4px;margin-bottom:5px}
 #warn .ok{background:#e6f3ee;color:#1b5b43}
 .sheetwrap{overflow:auto;padding:4px}
-#paper{width:210mm;min-height:297mm;margin:0 auto;background:#fff;padding:20mm 20mm 20mm 30mm;box-shadow:0 1px 8px rgba(0,0,0,.18);font:14pt/1.3 "Times New Roman",Times,serif;color:#000}
+#paper{width:210mm;min-height:297mm;margin:0 auto;background:repeating-linear-gradient(to bottom,#fff 0,#fff calc(297mm - 1px),#b8c2cc calc(297mm - 1px),#b8c2cc 297mm);padding:20mm 20mm 20mm 30mm;box-shadow:0 1px 8px rgba(0,0,0,.18);font-family:"Times New Roman",Times,serif;font-size:var(--fs,14pt);line-height:var(--lh,1.3);color:#000}
 #paper p{margin:0 0 6pt;text-align:justify}
 #paper .ind{text-indent:1.27cm}
 #paper .c{text-align:center}
@@ -42,11 +42,13 @@ summary{cursor:pointer;font-weight:600}
 #paper td{vertical-align:top;padding:0}
 #paper .ln{height:0;border-top:1px solid #000;margin:2px auto 4px}
 #paper .u{display:inline-block;border-bottom:1px solid #000;padding-bottom:1px}
+.stamp{display:inline-block;border:1.5px solid #000;padding:1px 12px;font-weight:700;font-size:13pt;margin-top:6pt}
+.stamp.k{color:#d40000;border-color:#d40000}
 .note{font-size:12.5px;color:var(--mut);margin:8px 4px 0;text-align:center}
 @media print{
  body *{visibility:hidden}
  #paper,#paper *{visibility:visible}
- #paper{position:absolute;left:0;top:0;width:auto;min-height:0;margin:0;padding:0;box-shadow:none}
+ #paper{position:absolute;left:0;top:0;width:auto;min-height:0;margin:0;padding:0;box-shadow:none;background:none}
  @page{size:A4;margin:20mm 20mm 20mm 30mm;@top-center{content:counter(page);font:13pt "Times New Roman"}}
  @page:first{@top-center{content:none}}
 }
@@ -64,7 +66,7 @@ summary{cursor:pointer;font-weight:600}
  <input type="file" id="file" accept=".docx,.txt">
  <label for="body" style="margin-top:10px">Hoặc dán nội dung vào đây</label>
  <textarea id="body" placeholder="Dán toàn bộ văn bản. Các dòng Quốc hiệu, V/v, Kính gửi, tên loại, trích yếu sẽ được nhận diện và điền vào mục 2."></textarea>
- <div class="row"><button id="detect">Nhận diện thông tin đầu văn bản</button></div>
+ <div class="row"><button id="detect">Nhận diện thông tin đầu văn bản</button><button id="tpl" class="sec">Chèn khung mẫu theo loại</button></div>
 
  <h2 style="margin-top:18px">2. Thông tin thể thức</h2>
  <div class="grid">
@@ -90,6 +92,16 @@ summary{cursor:pointer;font-weight:600}
   <div class="full"><label for="nn">Nơi nhận (mỗi nơi một dòng, không cần gạch đầu dòng)</label><textarea id="nn" rows="3"></textarea></div>
   <div><label for="sb">Số bản lưu (nếu cần)</label><input id="sb" placeholder="vd: 02"></div>
  </div>
+ <h2 style="margin-top:18px">4. Thành phần bổ sung và tùy chọn</h2>
+ <div class="grid">
+  <div><label for="khan">Mức độ khẩn</label><select id="khan"><option value="">Không</option><option>HỎA TỐC</option><option>THƯỢNG KHẨN</option><option>KHẨN</option></select></div>
+  <div><label for="mat">Độ mật</label><select id="mat"><option value="">Không</option><option>TUYỆT MẬT</option><option>TỐI MẬT</option><option>MẬT</option></select></div>
+  <div class="full"><label for="pv">Chỉ dẫn phạm vi lưu hành</label><select id="pv"><option value="">Không</option><option>XEM XONG TRẢ LẠI</option><option>LƯU HÀNH NỘI BỘ</option></select></div>
+  <div class="full"><label for="sd">Ký hiệu người soạn thảo / số bản phát hành (Điều 16)</label><input id="sd" placeholder="vd: HC(300)"></div>
+  <div class="full"><label for="dc">Địa chỉ, điện thoại, email, website (Điều 17)</label><input id="dc" placeholder="vd: Số … đường …, ĐT: …, Email: …"></div>
+  <div><label for="fs">Cỡ chữ nội dung</label><select id="fs"><option>13</option><option selected>14</option></select></div>
+  <div><label for="lh">Giãn dòng</label><select id="lh"><option>1.0</option><option>1.15</option><option selected>1.3</option><option>1.5</option></select></div>
+ </div>
  <div id="warn"></div>
  <div class="row">
   <button id="dl">Tải file Word</button>
@@ -113,8 +125,8 @@ summary{cursor:pointer;font-weight:600}
 const TYPES={'Công văn':'','Quyết định':'QĐ','Tờ trình':'TTr','Báo cáo':'BC','Thông báo':'TB','Kế hoạch':'KH','Chỉ thị':'CT','Quy chế':'QC','Quy định':'QyĐ','Hướng dẫn':'HD','Chương trình':'CTr','Phương án':'PA','Công điện':'CĐ'};
 const KG=['Công văn','Tờ trình','Báo cáo'];
 const $=id=>document.getElementById(id);
-const IDS=['loai','so','chuquan','donvi','vt','tcn','dd','ngay','ty','kg','quyen','cv1','cv2','ht','nn','sb'];
-const DEF={loai:'Công văn',chuquan:'TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM',donvi:'CÔNG TY ĐIỆN LỰC AN GIANG',vt:'PCAG',tcn:'TCNS',dd:'An Giang',quyen:'KT.',cv1:'GIÁM ĐỐC',cv2:'PHÓ GIÁM ĐỐC'};
+const IDS=['loai','so','chuquan','donvi','vt','tcn','dd','ngay','ty','kg','quyen','cv1','cv2','ht','nn','sb','khan','mat','pv','sd','dc','fs','lh'];
+const DEF={loai:'Công văn',chuquan:'TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM',donvi:'CÔNG TY ĐIỆN LỰC AN GIANG',vt:'PCAG',tcn:'TCNS',dd:'An Giang',quyen:'KT.',cv1:'GIÁM ĐỐC',cv2:'PHÓ GIÁM ĐỐC',fs:'14',lh:'1.3'};
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const up=s=>s.toUpperCase();
 
@@ -125,8 +137,10 @@ IDS.forEach(id=>{$(id).value=saved[id]??DEF[id]??''});
 if(!$('ngay').value)$('ngay').value=new Date().toISOString().slice(0,10);
 
 /* ---------- xử lý văn bản ---------- */
+const CD={'phó tổng giám đốc':'Phó Tổng giám đốc','tổng giám đốc':'Tổng giám đốc','phó trưởng phòng':'Phó Trưởng phòng','trưởng phòng':'Trưởng phòng','phó chánh văn phòng':'Phó Chánh Văn phòng','chánh văn phòng':'Chánh Văn phòng','phó trưởng ban':'Phó Trưởng ban','trưởng ban':'Trưởng ban','kế toán trưởng':'Kế toán trưởng','tổ trưởng':'Tổ trưởng','tổ phó':'Tổ phó','đội trưởng':'Đội trưởng','đội phó':'Đội phó','người đại diện phần vốn':'Người đại diện phần vốn','văn thư cơ quan':'Văn thư cơ quan','lưu trữ cơ quan':'Lưu trữ cơ quan'};
+const CDR=new RegExp('(?<![\\p{L}])('+Object.keys(CD).join('|')+')(?![\\p{L}])','gu');
 function fix(s){
- return s.replace(/\s+/g,' ').replace(/\s+([,;.:!?])/g,'$1')
+ return s.replace(/\s+/g,' ').replace(/\s+([,;.:!?])/g,'$1').replace(CDR,m=>CD[m])
   .replace(/(?<![\p{L}])(điều|chương|mục)\s+(\d+|[IVXLC]+)(?![\p{L}\d])/giu,(m,a,b)=>/^(\d+|[IVXLC]+)$/.test(b)?a[0].toUpperCase()+a.slice(1).toLowerCase()+' '+b:m)
   .replace(/(?<![\p{L}])(Khoản|Điểm)\s+(\d+|[a-zđ])(?![\p{L}\d])/gu,(m,a,b)=>a.toLowerCase()+' '+b).trim();
 }
@@ -140,10 +154,11 @@ function blocks(t){
    if(L[i+1]&&L[i+1].length<90&&!/^(Điều|Chương|Phần)\s/i.test(L[i+1]))out.push({k:'c',t:up(L[++i])});
    continue;}
   if(/^(QUYẾT ĐỊNH|QUYẾT NGHỊ)\s*:?$/i.test(s)){out.push({k:'c',t:up(s.replace(/:$/,''))+':'});continue}
+  if(/^Phụ lục\s+[IVXLC\d]+\.?$/i.test(s)){out.push({k:'pl',t:s[0].toUpperCase()+s.slice(1).replace(/\.$/,'')});if(L[i+1]&&L[i+1].length<120)out.push({k:'c',t:up(L[++i])});continue}
   if(/^Điều\s+\d+/i.test(s)){out.push({k:'d',t:s.replace(/^Điều\s+(\d+)\s*[.:]?\s*/i,'Điều $1. ')});continue}
   if(/^(Căn cứ|Theo đề nghị|Xét đề nghị)/i.test(s)){out.push({k:'cc',t:s.replace(/[.;,:]+$/,'')});continue}
   if(/^[fjwz]\)/i.test(s))warn.push('Điểm “'+s.slice(0,2)+'” dùng chữ cái không có trong bảng chữ cái đánh điểm (bỏ f, j, w, z).');
-  out.push({k:'p',t:s});
+  out.push({k:'p',t:s.replace(/^(\d+)\)\s*/,'$1. ').replace(/^([a-zđ])\.\s+/,'$1) ')});
  }
  out.forEach((o,i)=>{if(o.k==='cc')o.t+=(out[i+1]&&out[i+1].k==='cc')?';':'.'});
  return{out,warn};
@@ -174,23 +189,28 @@ const hasTitle=s=>s.loai!=='Công văn';
 
 /* ---------- xem trước ---------- */
 function render(){
- const s=state(),{out,warn}=blocks(s.body);
+ const s=state(),{out:all,warn}=blocks(s.body),ix=all.findIndex(o=>o.k==='pl'),out=ix<0?all:all.slice(0,ix),appx=ix<0?[]:all.slice(ix);
+ $('paper').style.setProperty('--fs',s.fs+'pt');$('paper').style.setProperty('--lh',s.lh);
  $('kgbox').style.display=KG.includes(s.loai)?'':'none';
  let h=`<table><tr><td style="width:42%;text-align:center;font-size:13pt">
  <div>${esc(up(s.chuquan))}</div><div class="b">${esc(up(s.donvi))}</div><div class="ln" style="width:40%"></div>
- <div style="font-size:13pt">${esc(s.sohieu)}</div>${hasTitle(s)?'':`<div style="font-size:12.5pt;margin-top:6pt">${esc(s.vv)}</div>`}</td>
+ <div style="font-size:13pt">${esc(s.sohieu)}</div>${hasTitle(s)?'':`<div style="font-size:12.5pt;margin-top:6pt">${esc(s.vv)}</div>`}${s.mat?`<div class="stamp k">${esc(s.mat)}</div><br>`:''}${s.khan?`<div class="stamp k">${esc(s.khan)}</div>`:''}</td>
  <td style="text-align:center"><div class="b" style="font-size:13pt">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
  <div class="b"><span class="u">Độc lập - Tự do - Hạnh phúc</span></div>
- <div class="i" style="margin-top:8pt">${esc(s.dateline)}</div></td></tr></table>`;
+ <div class="i" style="margin-top:8pt">${esc(s.dateline)}</div>${s.pv?`<div class="stamp" style="margin-top:8pt">${esc(s.pv)}</div>`:''}</td></tr></table>`;
  if(hasTitle(s))h+=`<p class="c b" style="margin-top:14pt;margin-bottom:0">${esc(up(s.loai))}</p><p class="c b" style="margin-bottom:0">${esc(s.ty||'…')}</p><div class="ln" style="width:30%;margin-bottom:10pt"></div>`;
  else h+='<div style="height:14pt"></div>';
  if(KG.includes(s.loai)&&s.kgL.length){
   h+=s.kgL.length===1?`<p class="c" style="text-align:center">Kính gửi: ${esc(s.kgL[0])}</p>`
    :`<table style="margin:0 0 6pt 3.2cm;width:auto"><tr><td>Kính gửi:&nbsp;</td><td>${s.kgL.map((x,i)=>'- '+esc(x)+(i<s.kgL.length-1?';':'.')).join('<br>')}</td></tr></table>`;}
- out.forEach(o=>{h+=o.k==='c'?`<p class="c b">${esc(o.t)}</p>`:o.k==='d'?`<p class="ind b">${esc(o.t)}</p>`:o.k==='cc'?`<p class="ind i">${esc(o.t)}</p>`:`<p class="ind">${esc(o.t)}</p>`});
+ const H=o=>o.k==='pl'?`<p class="c b" style="break-before:page;margin-top:24pt">${esc(o.t)}</p>`:o.k==='c'?`<p class="c b">${esc(o.t)}</p>`:o.k==='d'?`<p class="ind b">${esc(o.t)}</p>`:o.k==='cc'?`<p class="ind i">${esc(o.t)}</p>`:`<p class="ind">${esc(o.t)}</p>`;
+ out.forEach(o=>{h+=H(o)});
  h+=`<table style="margin-top:8pt;page-break-inside:avoid"><tr><td style="width:50%;font-size:11pt"><div class="b i" style="font-size:12pt">Nơi nhận:</div>
  ${s.nnL.map((x,i)=>'- '+esc(x)+(i<s.nnL.length-1?';':'.')).join('<br>')}</td>
  <td style="text-align:center" class="b">${s.sig.map(esc).join('<br>')}<div style="height:3.4cm"></div>${esc(s.ht)}</td></tr></table>`;
+ if(s.sd)h+=`<p style="font-size:11pt;margin:6pt 0 0;text-align:left">${esc(s.sd)}</p>`;
+ if(s.dc)h+=`<div class="ln" style="width:100%;margin-top:10pt"></div><p class="c" style="font-size:11pt">${esc(s.dc)}</p>`;
+ appx.forEach(o=>{h+=H(o)});
  $('paper').innerHTML=h;
  const w=[...warn];
  if(!s.ty)w.push('Chưa có trích yếu nội dung.');
@@ -199,6 +219,19 @@ function render(){
  if(KG.includes(s.loai)&&!s.kgL.length)w.push(s.loai+' cần có phần “Kính gửi”.');
  if(s.loai==='Quyết định'&&!out.some(o=>o.k==='cc'))w.push('Quyết định cần có phần căn cứ ban hành (dòng bắt đầu bằng “Căn cứ”).');
  if(s.quyen&&s.quyen!=='Q.'&&!s.cv2)w.push('Đã chọn '+s.quyen+' nhưng chưa nhập chức vụ người ký.');
+ if(KG.includes(s.loai)||hasTitle(s)){} 
+ if(s.loai==='Công văn'&&!s.tcn)w.push('Công văn cần ký hiệu Ban/Phòng soạn thảo (dạng …/PCAG-TCNS).');
+ if(!s.vt)w.push('Chưa nhập chữ viết tắt đơn vị cho ký hiệu văn bản.');
+ if(/[.]$/.test(s.ty))w.push('Trích yếu nội dung không kết thúc bằng dấu chấm.');
+ {const AL='abcdđeghiklmnopqrstuvxy';let ld=0,pv=-1;
+  out.forEach(o=>{
+   if(o.k==='d'){const n=+o.t.match(/\d+/)[0];if(n!==ld+1)w.push('Số Điều không liên tục: sau Điều '+ld+' là Điều '+n+'.');ld=n;pv=-1;return}
+   if(o.k!=='p')return;
+   if(/^\d+\.\s/.test(o.t)){pv=-1;return}
+   const m=o.t.match(/^([a-zđ])\)\s/);if(!m)return;
+   const k=AL.indexOf(m[1]);if(k<0)return;
+   if(k!==pv+1)w.push('Điểm “'+m[1]+')” sai thứ tự (cần “'+AL[pv+1]+')”).');pv=k;});}
+ if(appx.length&&!out.some(o=>o.k==='p'&&/Phụ lục/i.test(o.t)))w.push('Có Phụ lục nhưng nội dung chính chưa có chỉ dẫn về Phụ lục (Điều 14).');
  $('warn').innerHTML=w.length?w.map(x=>`<div>${esc(x)}</div>`).join(''):'<div class="ok">Chưa phát hiện thiếu sót về thể thức.</div>';
  try{const o={};IDS.forEach(id=>o[id]=$(id).value);localStorage.setItem('tt739',JSON.stringify(o))}catch(e){}
 }
@@ -237,22 +270,25 @@ $('file').onchange=async e=>{
 
 /* ---------- xuất Word ---------- */
 function buildDoc(){
- const D=docx,F='Times New Roman',s=state(),{out}=blocks(s.body);
- const run=(t,o={})=>new D.TextRun({text:t,font:F,size:o.sz||28,bold:o.b,italics:o.i});
+ const D=docx,F='Times New Roman',s=state(),{out:all}=blocks(s.body),BS=(+s.fs||14)*2,LN=Math.round((+s.lh||1.3)*240),ix=all.findIndex(o=>o.k==='pl'),out=ix<0?all:all.slice(0,ix),appx=ix<0?[]:all.slice(ix);
+ const run=(t,o={})=>new D.TextRun({text:t,font:F,size:o.sz||BS,bold:o.b,italics:o.i,color:o.col});
  const none={style:D.BorderStyle.NONE,size:0,color:'FFFFFF'};
  const nb={top:none,bottom:none,left:none,right:none};
  const line=(w,tot)=>({border:{bottom:{style:D.BorderStyle.SINGLE,size:6,space:1,color:'000000'}},indent:{left:Math.round((tot-w)/2),right:Math.round((tot-w)/2)}});
- const P=(t,o={})=>new D.Paragraph({alignment:o.al||D.AlignmentType.JUSTIFIED,spacing:{after:o.after??120,before:o.before||0,line:312},indent:o.ind===false?undefined:{firstLine:720},keepNext:o.kn,...(o.extra||{}),children:Array.isArray(t)?t:[run(t,o)]});
+ const P=(t,o={})=>new D.Paragraph({alignment:o.al||D.AlignmentType.JUSTIFIED,spacing:{after:o.after??120,before:o.before||0,line:LN},indent:o.ind===false?undefined:{firstLine:720},keepNext:o.kn,pageBreakBefore:o.pb,...(o.extra||{}),children:Array.isArray(t)?t:[run(t,o)]});
  const C=D.AlignmentType.CENTER;
  const cell=(w,ch)=>new D.TableCell({width:{size:w,type:D.WidthType.DXA},borders:nb,children:ch});
  const tbl=(cols,rows)=>new D.Table({width:{size:9071,type:D.WidthType.DXA},columnWidths:cols,borders:{...nb,insideHorizontal:none,insideVertical:none},rows:[new D.TableRow({children:rows})]});
  const LW=3800,RW=5271,ch=[];
+ const bx={style:D.BorderStyle.SINGLE,size:8,space:3,color:'000000'},stp=(t,col)=>P(t,{al:C,ind:false,before:80,after:0,b:true,sz:26,col,extra:{border:{top:bx,bottom:bx,left:bx,right:bx},indent:{left:600,right:600}}});
  const left=[P(up(s.chuquan),{al:C,ind:false,after:0,sz:26}),P(up(s.donvi),{al:C,ind:false,after:0,sz:26,b:true}),
   P('',{ind:false,after:60,sz:4,extra:line(1500,LW)}),P(s.sohieu,{al:C,ind:false,after:60,sz:26})];
  if(!hasTitle(s))left.push(P(s.vv,{al:C,ind:false,before:120,sz:25}));
+ if(s.mat)left.push(stp(s.mat,'FF0000'));if(s.khan)left.push(stp(s.khan,'FF0000'));
  const right=[P('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM',{al:C,ind:false,after:0,sz:26,b:true}),
   P('Độc lập - Tự do - Hạnh phúc',{al:C,ind:false,after:0,b:true,extra:line(3900,RW)}),
   P(s.dateline,{al:C,ind:false,before:160,i:true})];
+ if(s.pv)right.push(stp(s.pv));
  ch.push(tbl([LW,RW],[cell(LW,left),cell(RW,right)]));
  if(hasTitle(s)){
   const w=Math.min(8800,(s.ty||'').length*145);
@@ -263,13 +299,17 @@ function buildDoc(){
   if(s.kgL.length===1)ch.push(P('Kính gửi: '+s.kgL[0],{al:C,ind:false}));
   else s.kgL.forEach((x,i)=>ch.push(P((i?'':'Kính gửi: ')+'- '+x+(i<s.kgL.length-1?';':'.'),{al:D.AlignmentType.LEFT,ind:false,after:40,extra:{indent:{left:i?1900:1000}}})));
  }
- out.forEach(o=>ch.push(o.k==='c'?P(o.t,{al:C,ind:false,b:true,kn:true,after:60}):o.k==='d'?P(o.t,{b:true,kn:true}):o.k==='cc'?P(o.t,{i:true}):P(o.t)));
+ const B=o=>o.k==='pl'?P(o.t,{al:C,ind:false,b:true,kn:true,after:60,pb:true}):o.k==='c'?P(o.t,{al:C,ind:false,b:true,kn:true,after:60}):o.k==='d'?P(o.t,{b:true,kn:true}):o.k==='cc'?P(o.t,{i:true}):P(o.t);
+ out.forEach(o=>ch.push(B(o)));
  const nl=[P('Nơi nhận:',{al:D.AlignmentType.LEFT,ind:false,after:0,b:true,i:true,sz:24}),
   ...s.nnL.map((x,i)=>P('- '+x+(i<s.nnL.length-1?';':'.'),{al:D.AlignmentType.LEFT,ind:false,after:0,sz:22}))];
  const sg=[...s.sig.map(x=>P(x,{al:C,ind:false,after:0,b:true})),...Array(5).fill(0).map(()=>P('',{ind:false,after:0})),P(s.ht,{al:C,ind:false,b:true})];
  ch.push(P('',{ind:false,after:60}),tbl([4500,4571],[cell(4500,nl),cell(4571,sg)]));
+ if(s.sd)ch.push(P(s.sd,{al:D.AlignmentType.LEFT,ind:false,before:120,after:0,sz:22}));
+ if(s.dc)ch.push(P(s.dc,{al:C,ind:false,before:160,after:0,sz:22,extra:{border:{top:{style:D.BorderStyle.SINGLE,size:6,space:4,color:'000000'}}}}));
+ appx.forEach(o=>ch.push(B(o)));
  return new D.Document({
-  styles:{default:{document:{run:{font:F,size:28}}}},
+  styles:{default:{document:{run:{font:F,size:BS}}}},
   sections:[{properties:{titlePage:true,page:{size:{width:11906,height:16838},margin:{top:1134,bottom:1134,left:1701,right:1134,header:567}}},
    headers:{default:new D.Header({children:[new D.Paragraph({alignment:C,children:[new D.TextRun({children:[D.PageNumber.CURRENT],font:F,size:26})]})]}),first:new D.Header({children:[new D.Paragraph('')]})},
    children:ch}]});
@@ -281,6 +321,20 @@ $('dl').onclick=async()=>{
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
  a.download=(s.sohieu.replace(/^Số:\s*/,'').replace(/[\/\\…]/g,'_')||'van-ban')+'.docx';
  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+};
+const TPL={
+'Công văn':'Thực hiện Công văn số …/… ngày … của …, [đơn vị] có ý kiến như sau:\n1. …\n2. …\nĐề nghị … phối hợp thực hiện.',
+'Quyết định':'Căn cứ …\nCăn cứ …\nTheo đề nghị của …\nQUYẾT ĐỊNH:\nĐiều 1. …\nĐiều 2. …\nĐiều 3. Các Ban, đơn vị và cá nhân có liên quan chịu trách nhiệm thi hành Quyết định này.',
+'Tờ trình':'Thực hiện …, [đơn vị] kính trình … nội dung như sau:\n1. Sự cần thiết\n…\n2. Nội dung đề xuất\n…\n3. Kiến nghị\n…',
+'Báo cáo':'Thực hiện …, [đơn vị] báo cáo kết quả như sau:\n1. Tình hình thực hiện\n…\n2. Tồn tại, nguyên nhân\n…\n3. Đề xuất, kiến nghị\n…',
+'Thông báo':'Căn cứ …\n[Đơn vị] thông báo như sau:\n1. …\n2. …',
+'Kế hoạch':'1. Mục đích, yêu cầu\na) …\nb) …\n2. Nội dung thực hiện\n…\n3. Tổ chức thực hiện\n…',
+'Chỉ thị':'Để …, [người ký] yêu cầu:\n1. …\n2. …\n3. …',
+'Quy chế':'Chương I\nNHỮNG QUY ĐỊNH CHUNG\nĐiều 1. Phạm vi điều chỉnh và đối tượng áp dụng\n1. …\n2. …\nĐiều 2. Giải thích từ ngữ\n…',
+'Quy định':'Chương I\nNHỮNG QUY ĐỊNH CHUNG\nĐiều 1. Phạm vi điều chỉnh và đối tượng áp dụng\n1. …\n2. …\nĐiều 2. Giải thích từ ngữ\n…'};
+$('tpl').onclick=()=>{
+ if($('body').value.trim()&&!confirm('Thay nội dung đang có bằng khung mẫu?'))return;
+ $('body').value=TPL[$('loai').value]||TPL['Công văn'];render();
 };
 $('pr').onclick=()=>window.print();
 render();
