@@ -32,7 +32,7 @@ summary{cursor:pointer;font-weight:600}
 #warn div{background:var(--warnbg);color:var(--warn);padding:6px 10px;border-radius:4px;margin-bottom:5px}
 #warn .ok{background:#e6f3ee;color:#1b5b43}
 .sheetwrap{overflow:auto;padding:4px}
-#paper{width:210mm;min-height:297mm;margin:0 auto;background:repeating-linear-gradient(to bottom,#fff 0,#fff calc(297mm - 1px),#b8c2cc calc(297mm - 1px),#b8c2cc 297mm);padding:20mm 20mm 20mm 30mm;box-shadow:0 1px 8px rgba(0,0,0,.18);font-family:"Times New Roman",Times,serif;font-size:var(--fs,14pt);line-height:var(--lh,1.3);color:#000}
+#paper{position:relative;width:210mm;min-height:297mm;margin:0 auto;background:repeating-linear-gradient(to bottom,#fff 0,#fff calc(297mm - 1px),#b8c2cc calc(297mm - 1px),#b8c2cc 297mm);padding:20mm 20mm 20mm 30mm;box-shadow:0 1px 8px rgba(0,0,0,.18);font-family:"Times New Roman",Times,serif;font-size:var(--fs,14pt);line-height:var(--lh,1.3);color:#000}
 #paper p{margin:0 0 6pt;text-align:justify}
 #paper .ind{text-indent:1.27cm}
 #paper .c{text-align:center}
@@ -44,11 +44,25 @@ summary{cursor:pointer;font-weight:600}
 #paper .u{display:inline-block;border-bottom:1px solid #000;padding-bottom:1px}
 .stamp{display:inline-block;border:1.5px solid #000;padding:1px 12px;font-weight:700;font-size:13pt;margin-top:6pt}
 .stamp.k{color:#d40000;border-color:#d40000}
+.tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.tab{background:#fff;color:var(--acc)}.tab.on{background:var(--acc);color:#fff}
+#insp{font-size:12.5px;background:#fff;border:1px solid var(--line);border-radius:4px;padding:8px 10px;margin-bottom:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:2px 14px;color:var(--mut)}
+#insp b{color:var(--ink)}
+.pick{outline:2px solid #e07b00;outline-offset:1px}
+[hidden]{display:none!important}
+.sheetwrap p{cursor:default}
+#rep{margin-top:10px;font-size:13px}
+#rep div{background:#eef5f6;color:var(--acc2);padding:6px 10px;border-radius:4px;margin-bottom:5px}
+#rep .w{background:var(--warnbg);color:var(--warn)}
+.docx-wrapper{background:#e5e9ed!important;padding:10px!important}
+.ruler{height:16px;width:210mm;margin:0 auto 4px;border:1px solid var(--line);background:linear-gradient(to right,#dfe6ec 30mm,transparent 30mm calc(210mm - 20mm),#dfe6ec calc(210mm - 20mm)),repeating-linear-gradient(to right,#6b7a88 0 1px,transparent 1px 10mm)}
+#paper::before{content:"";position:absolute;inset:20mm 20mm 20mm 30mm;border:1px dashed #a9bccd;pointer-events:none}
 .note{font-size:12.5px;color:var(--mut);margin:8px 4px 0;text-align:center}
 @media print{
  body *{visibility:hidden}
  #paper,#paper *{visibility:visible}
  #paper{position:absolute;left:0;top:0;width:auto;min-height:0;margin:0;padding:0;box-shadow:none;background:none}
+ #paper::before,.ruler{display:none}
  @page{size:A4;margin:20mm 20mm 20mm 30mm;@top-center{content:counter(page);font:13pt "Times New Roman"}}
  @page:first{@top-center{content:none}}
 }
@@ -64,6 +78,8 @@ summary{cursor:pointer;font-weight:600}
  <h2>1. Văn bản cần chuẩn hóa</h2>
  <label for="file">Mở file Word (.docx) hoặc văn bản thuần (.txt)</label>
  <input type="file" id="file" accept=".docx,.txt">
+ <div class="row"><button id="std">Chuẩn hóa tại chỗ (giữ khung, bảng, hình, ký hiệu)</button><button id="dlstd" class="sec" disabled>Tải bản đã chuẩn hóa</button></div>
+ <div id="rep"></div>
  <label for="body" style="margin-top:10px">Hoặc dán nội dung vào đây</label>
  <textarea id="body" placeholder="Dán toàn bộ văn bản. Các dòng Quốc hiệu, V/v, Kính gửi, tên loại, trích yếu sẽ được nhận diện và điền vào mục 2."></textarea>
  <div class="row"><button id="detect">Nhận diện thông tin đầu văn bản</button><button id="tpl" class="sec">Chèn khung mẫu theo loại</button></div>
@@ -114,11 +130,18 @@ summary{cursor:pointer;font-weight:600}
 </section>
 
 <section>
- <div class="sheetwrap"><div id="paper"></div></div>
- <p class="note">Bản xem trước hiển thị liền mạch; ngắt trang chính xác theo file Word hoặc bản in. Hãy đọc lại trước khi ký.</p>
+ <div class="tabs"><button class="tab" data-v="orig">Bản gốc</button><button class="tab" data-v="std">Đã chuẩn hóa tại chỗ</button><button class="tab on" data-v="form">Dựng theo mẫu</button></div>
+ <div id="insp">Bấm vào một đoạn trong bản xem trước để xem phông, cỡ chữ, canh lề, thụt lề, giãn dòng và lề trang.</div>
+ <div class="sheetwrap" id="v-orig" hidden><p class="note">Mở một file Word (.docx) ở cột bên trái để xem bản gốc.</p></div>
+ <div class="sheetwrap" id="v-std" hidden><p class="note">Bấm “Chuẩn hóa tại chỗ” sau khi mở file Word.</p></div>
+ <div class="sheetwrap" id="v-form"><p class="note" style="text-align:left">Chế độ này dựng lại văn bản từ chữ và các ô nhập; bảng, hình, khung không được đưa vào. Nếu văn bản có bảng, khung, ký hiệu, hãy dùng “Chuẩn hóa tại chỗ”.</p><div class="ruler"></div><div id="paper"></div></div>
+ <p class="note">Bản xem trước ngắt trang như Word. Hãy đọc lại trước khi ký.</p>
 </section>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.2/dist/docx-preview.min.js"></script>
+<script>window.DP=window.docx;</script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script>
@@ -262,7 +285,7 @@ $('file').onchange=async e=>{
  const f=e.target.files[0];if(!f)return;
  try{
   let txt;
-  if(/\.docx$/i.test(f.name))txt=(await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()})).value;
+  if(/\.docx$/i.test(f.name)){SRC=await f.arrayBuffer();SRCN=f.name;txt=(await mammoth.extractRawText({arrayBuffer:SRC.slice(0)})).value;openSrc()}
   else txt=await f.text();
   $('body').value=txt.replace(/\n{2,}/g,'\n');render();
  }catch(err){alert('Không đọc được file. Hãy thử lưu lại dạng .docx hoặc dán nội dung trực tiếp.')}
@@ -337,6 +360,147 @@ $('tpl').onclick=()=>{
  $('body').value=TPL[$('loai').value]||TPL['Công văn'];render();
 };
 $('pr').onclick=()=>window.print();
+
+/* ---------- chuẩn hóa tại chỗ: sửa trực tiếp XML của file .docx ---------- */
+let SRC=null,SRCN='van-ban.docx',STD=null;
+const WN='http://schemas.openxmlformats.org/wordprocessingml/2006/main',RN='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const PO='pStyle keepNext keepLines pageBreakBefore framePr widowControl numPr suppressLineNumbers pBdr shd tabs suppressAutoHyphens kinsoku wordWrap overflowPunct topLinePunct autoSpaceDE autoSpaceDN bidi adjustRightInd snapToGrid spacing ind contextualSpacing mirrorIndents suppressOverlap jc textDirection textAlignment textboxTightWrap outlineLvl divId cnfStyle rPr sectPr pPrChange'.split(' ');
+const RO='rStyle rFonts b bCs i iCs caps smallCaps strike dstrike outline shadow emboss imprint noProof snapToGrid vanish webHidden color spacing w kern position sz szCs highlight u effect bdr shd fitText vertAlign rtl cs em lang eastAsianLayout specVanish oMath'.split(' ');
+const SO='headerReference footerReference footnotePr endnotePr type pgSz pgMar paperSrc pgBorders lnNumType pgNumType cols formProt vAlign noEndnote titlePg textDirection bidi rtlGutter docGrid'.split(' ');
+const kids=(e,t)=>[...e.children].filter(c=>c.localName===t);
+const del=(e,t)=>kids(e,t).forEach(x=>x.remove());
+function put(par,tag,at,ord){
+ let el=kids(par,tag)[0];
+ if(!el){el=par.ownerDocument.createElementNS(WN,'w:'+tag);const i=ord.indexOf(tag);par.insertBefore(el,[...par.children].find(c=>ord.indexOf(c.localName)>i)||null)}
+ for(const k in at)el.setAttributeNS(WN,'w:'+k,at[k]);return el}
+const fixRef=s=>s.replace(CDR,m=>CD[m]).replace(/(?<![\p{L}])(điều|chương|mục)\s+(\d+|[IVXLC]+)(?![\p{L}\d])/giu,(m,a,b)=>/^(\d+|[IVXLC]+)$/.test(b)?a[0].toUpperCase()+a.slice(1).toLowerCase()+' '+b:m).replace(/(?<![\p{L}])(Khoản|Điểm)\s+(\d+|[a-zđ])(?![\p{L}\d])/gu,(m,a,b)=>a.toLowerCase()+' '+b);
+const hdr=pg=>`<w:hdr xmlns:w="${WN}"><w:p><w:pPr><w:jc w:val="center"/></w:pPr>${pg?'<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="26"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>2</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>':''}</w:p></w:hdr>`;
+
+async function standardize(){
+ const zip=await JSZip.loadAsync(SRC.slice(0));
+ const FS=(+$('fs').value||14)*2,LN=Math.round((+$('lh').value||1.3)*240),C={},inc=k=>C[k]=(C[k]||0)+1;
+ const SYM=/symbol|wingdings|webdings|emoji|dingbats/i,TNR='Times New Roman',PS=new DOMParser(),SR=new XMLSerializer();
+ const rd=async n=>PS.parseFromString(await zip.file(n).async('string'),'application/xml');
+ const wr=(n,d)=>zip.file(n,'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'+SR.serializeToString(d).replace(/^<\?xml[^>]*\?>\s*/,''));
+ const font=r=>{const f=put(r,'rFonts',{ascii:TNR,hAnsi:TNR,cs:TNR,eastAsia:TNR},RO);['asciiTheme','hAnsiTheme','eastAsiaTheme','cstheme'].forEach(a=>f.removeAttributeNS(WN,a))};
+ const d=await rd('word/document.xml');
+ const sects=[...d.getElementsByTagNameNS(WN,'sectPr')];
+ const m0=sects[0]&&kids(sects[0],'pgMar')[0];
+ const mar=m0?['top','right','bottom','left'].map(k=>(+m0.getAttributeNS(WN,k)/567).toFixed(1)):null;
+ const seq=[];
+ [...d.getElementsByTagNameNS(WN,'p')].forEach(p=>{
+  const txt=[...p.getElementsByTagNameNS(WN,'t')].map(t=>t.textContent).join('').trim();
+  let tbl=false;for(let n=p.parentNode;n;n=n.parentNode)if(n.localName==='tbl'){tbl=true;break}
+  const pPr=kids(p,'pPr')[0]||p.insertBefore(d.createElementNS(WN,'w:pPr'),p.firstChild);
+  const j=kids(pPr,'jc')[0],jc=j?j.getAttributeNS(WN,'val'):'';
+  const cc=!tbl&&/^(Căn cứ|Theo đề nghị|Xét đề nghị)/i.test(txt),dieu=!tbl&&/^Điều\s+\d+/.test(txt)&&txt.length<130,chg=!tbl&&/^(Chương|Phần)\s+[IVXLC\d]+/i.test(txt)&&txt.length<60;
+  const lst=kids(pPr,'numPr').length>0||/^[-•–+]\s/.test(txt),body=!tbl&&(txt.length>=40||cc||dieu),mid=jc==='center'||jc==='right';
+  [...p.getElementsByTagNameNS(WN,'r')].forEach(r=>{
+   const rPr=kids(r,'rPr')[0]||r.insertBefore(d.createElementNS(WN,'w:rPr'),r.firstChild);
+   const rf=kids(rPr,'rFonts')[0],sym=r.getElementsByTagNameNS(WN,'sym').length>0||(rf&&SYM.test(rf.getAttributeNS(WN,'ascii')||''));
+   if(!sym){
+    if(!rf||rf.getAttributeNS(WN,'ascii')!==TNR)inc('Phông chữ đưa về Times New Roman');
+    font(rPr);
+    if(kids(rPr,'color').length){del(rPr,'color');inc('Màu chữ đưa về đen')}
+    if(txt&&!tbl){
+     const z=kids(rPr,'sz')[0],v=z?+z.getAttributeNS(WN,'val'):0,nv=body?FS:(v?26:FS);
+     if(body?v!==FS:(v<22||v>28)){put(rPr,'sz',{val:nv},RO);put(rPr,'szCs',{val:nv},RO);inc('Cỡ chữ đưa về chuẩn (13–14)')}
+    }
+    if(cc||dieu||chg){const e=put(rPr,cc?'i':'b',{},RO);e.removeAttributeNS(WN,'val')}
+   }
+   if(!rPr.children.length)rPr.remove();
+  });
+  if(chg){put(pPr,'jc',{val:'center'},PO);inc('Chương/Phần canh giữa')}
+  if(body||chg){const sp=put(pPr,'spacing',{line:LN,lineRule:'auto'},PO);if((+sp.getAttributeNS(WN,'after')||0)<120)sp.setAttributeNS(WN,'w:after','120');inc('Giãn dòng và khoảng cách đoạn')}
+  if(body&&!mid&&jc!=='both'){put(pPr,'jc',{val:'both'},PO);inc('Canh đều hai bên')}
+  if(body&&!mid&&!lst){const ind=put(pPr,'ind',{firstLine:720},PO);['hanging','firstLineChars','hangingChars'].forEach(a=>ind.removeAttributeNS(WN,a));inc('Thụt đầu dòng 1,27 cm')}
+  [...p.getElementsByTagNameNS(WN,'t')].forEach(t=>{const n=fixRef(t.textContent);if(n!==t.textContent){t.textContent=n;inc('Viết hoa chức danh, viện dẫn Điều/Khoản')}});
+  if(txt&&!tbl)seq.push({p,cc});
+ });
+ seq.forEach((o,i)=>{
+  if(!o.cc)return;
+  const t=[...o.p.getElementsByTagNameNS(WN,'t')].filter(x=>x.textContent.trim()).pop();if(!t)return;
+  const n=t.textContent.replace(/[\s.;,:]+$/,'')+((seq[i+1]&&seq[i+1].cc)?';':'.');
+  if(n!==t.textContent){t.textContent=n;t.setAttributeNS('http://www.w3.org/XML/1998/namespace','xml:space','preserve');inc('Dấu cuối dòng căn cứ (; và .)')}
+ });
+ sects.forEach(s=>{
+  const z=kids(s,'pgSz')[0],land=z&&(+z.getAttributeNS(WN,'w')>+z.getAttributeNS(WN,'h'));
+  const g=put(s,'pgSz',land?{w:16838,h:11906,orient:'landscape'}:{w:11906,h:16838},SO);if(!land)g.removeAttributeNS(WN,'orient');
+  put(s,'pgMar',{top:1134,right:1134,bottom:1134,left:1701,header:567,footer:567,gutter:0},SO);
+ });
+ const s0=sects[0];
+ if(s0&&!kids(s0,'headerReference').length){
+  zip.file('word/header_std1.xml',hdr(1));zip.file('word/header_std2.xml',hdr(0));
+  const rl=await rd('word/_rels/document.xml.rels'),PR='http://schemas.openxmlformats.org/package/2006/relationships';
+  [['rIdStd1','header_std1.xml'],['rIdStd2','header_std2.xml']].forEach(([id,t])=>{const e=rl.createElementNS(PR,'Relationship');e.setAttribute('Id',id);e.setAttribute('Type',RN+'/header');e.setAttribute('Target',t);rl.documentElement.appendChild(e)});
+  wr('word/_rels/document.xml.rels',rl);
+  const ct=await rd('[Content_Types].xml'),CN='http://schemas.openxmlformats.org/package/2006/content-types';
+  ['header_std1','header_std2'].forEach(n=>{const e=ct.createElementNS(CN,'Override');e.setAttribute('PartName','/word/'+n+'.xml');e.setAttribute('ContentType','application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml');ct.documentElement.appendChild(e)});
+  wr('[Content_Types].xml',ct);
+  [['first','rIdStd2'],['default','rIdStd1']].forEach(([ty,id])=>{const e=d.createElementNS(WN,'w:headerReference');e.setAttributeNS(WN,'w:type',ty);e.setAttributeNS(RN,'r:id',id);s0.insertBefore(e,s0.firstChild)});
+  put(s0,'titlePg',{},SO);inc('Thêm số trang từ trang 2');
+ }
+ if(zip.file('word/styles.xml')){
+  const st=await rd('word/styles.xml');
+  [...st.getElementsByTagNameNS(WN,'rPr')].forEach(r=>{const f=kids(r,'rFonts')[0];if(f&&SYM.test(f.getAttributeNS(WN,'ascii')||''))return;font(r);del(r,'color')});
+  wr('word/styles.xml',st);
+ }
+ wr('word/document.xml',d);
+ const all=[...d.getElementsByTagNameNS(WN,'t')].map(t=>t.textContent).join(' ');
+ const n=t=>d.getElementsByTagNameNS(WN,t).length;
+ const chk=[['Quốc hiệu',/CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM/i],['Tiêu ngữ',/Độc lập\s*-\s*Tự do\s*-\s*Hạnh phúc/i],['Số, ký hiệu',/Số\s*:\s*\d*\s*\/\s*\S+/],['Địa danh, ngày tháng',/ngày\s+\d{1,2}\s+tháng\s+\d{1,2}\s+năm\s+\d{4}/i],['Nơi nhận',/Nơi nhận/i],['Người ký',/(TM\.|KT\.|TL\.|TUQ\.|Q\.|GIÁM ĐỐC|TRƯỞNG|CHỦ TỊCH)/]];
+ const warn=[];
+ if(/ngày\s+[1-9]\s+tháng/i.test(all)||/tháng\s+[12]\s+năm/i.test(all))warn.push('Ngày nhỏ hơn 10 và tháng 1, 2 cần thêm số 0 (vd: ngày 05 tháng 02). Hãy sửa trong file.');
+ if(/Số\s*:\s*[1-9]\s*\//.test(all))warn.push('Số văn bản nhỏ hơn 10 cần thêm số 0 phía trước.');
+ const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',compression:'DEFLATE'});
+ return{blob,C,mar,warn,keep:[n('tbl'),n('drawing')+n('pict'),n('txbxContent'),n('sym')],miss:chk.filter(c=>!c[1].test(all)).map(c=>c[0])};
+}
+
+/* ---------- xem trước và công cụ soi định dạng ---------- */
+function show(v){
+ ['orig','std','form'].forEach(x=>{$('v-'+x).hidden=x!==v});
+ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+}
+async function paint(id,buf){
+ const c=$(id);c.innerHTML='';
+ try{await DP.renderAsync(buf,c,null,{inWrapper:true,breakPages:true,experimental:true})}
+ catch(e){c.textContent='Không dựng được bản xem trước: '+e.message}
+}
+function openSrc(){STD=null;$('dlstd').disabled=true;$('rep').innerHTML='';$('v-std').innerHTML='<p class="note">Bấm “Chuẩn hóa tại chỗ” để xem kết quả.</p>';show('orig');paint('v-orig',SRC)}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>show(b.dataset.v));
+['orig','std','form'].forEach(x=>$('v-'+x).addEventListener('click',e=>{
+ const p=e.target.closest('p,td');if(!p||p.classList.contains('note'))return;
+ document.querySelectorAll('.pick').forEach(q=>q.classList.remove('pick'));p.classList.add('pick');
+ const cs=getComputedStyle(p),el=p.querySelector('span,b,i,u')||p,sc=getComputedStyle(el),sec=p.closest('section.docx,#paper'),sp=sec&&getComputedStyle(sec);
+ const pt=v=>(parseFloat(v)*.75).toFixed(1).replace(/\.0$/,''),cm=v=>(parseFloat(v)/37.8).toFixed(2).replace(/\.?0+$/,'')||'0';
+ const fam=sc.fontFamily.split(',')[0].replace(/["']/g,''),sz=parseFloat(pt(sc.fontSize));
+ const al={start:'trái',left:'trái',center:'giữa',right:'phải',justify:'đều hai bên'}[cs.textAlign]||cs.textAlign;
+ const lh=cs.lineHeight==='normal'?'đơn':(parseFloat(cs.lineHeight)/parseFloat(sc.fontSize)).toFixed(2);
+ const r=(k,v,ok)=>`<span><b>${k}:</b> ${v}${ok===undefined?'':ok?' ✓':' ✗'}</span>`;
+ $('insp').innerHTML=r('Phông',esc(fam),/times new roman/i.test(fam))+r('Cỡ chữ',sz+' pt',sz>=13&&sz<=14)+r('Kiểu',(+sc.fontWeight>=600?'đậm ':'')+(sc.fontStyle==='italic'?'nghiêng ':'')+(/underline/.test(sc.textDecorationLine)?'gạch chân':'')||'thường')+r('Màu',esc(sc.color))
+  +r('Canh lề',al)+r('Thụt đầu dòng',cm(cs.textIndent)+' cm')+r('Lề trái đoạn',cm(cs.paddingLeft||cs.marginLeft)+' cm')+r('Giãn dòng',lh)+r('Trước / sau',pt(cs.marginTop)+' / '+pt(cs.marginBottom)+' pt')
+  +(sp?r('Lề trang (trên/phải/dưới/trái)',[sp.paddingTop,sp.paddingRight,sp.paddingBottom,sp.paddingLeft].map(cm).join(' / ')+' cm'):'');
+}));
+
+$('std').onclick=async()=>{
+ if(!SRC){alert('Hãy mở một file Word (.docx) trước.');return}
+ if(!window.JSZip){alert('Chưa tải được thư viện xử lý .docx. Kiểm tra kết nối mạng rồi thử lại.');return}
+ $('rep').innerHTML='<div>Đang xử lý…</div>';
+ try{
+  const r=await standardize();STD=r.blob;$('dlstd').disabled=false;show('std');paint('v-std',STD);
+  const c=Object.entries(r.C).map(([k,v])=>`<div>${esc(k)}: ${v}</div>`).join('');
+  $('rep').innerHTML=`<div>Giữ nguyên: ${r.keep[0]} bảng, ${r.keep[1]} hình/đối tượng, ${r.keep[2]} khung văn bản, ${r.keep[3]} ký hiệu đặc biệt.</div>`
+   +(r.mar?`<div>Lề gốc (trên/phải/dưới/trái): ${r.mar.join(' / ')} cm → 2,0 / 2,0 / 2,0 / 3,0 cm.</div>`:'')
+   +(c||'<div>Không cần chỉnh thêm.</div>')
+   +r.miss.map(m=>`<div class="w">Chưa thấy thành phần: ${esc(m)}</div>`).join('')+r.warn.map(m=>`<div class="w">${esc(m)}</div>`).join('');
+ }catch(err){$('rep').innerHTML='<div class="w">Không xử lý được file này ('+esc(err.message)+'). Hãy lưu lại dạng .docx mới (không phải .doc) rồi thử lại.</div>'}
+};
+$('dlstd').onclick=()=>{
+ if(!STD)return;
+ const a=document.createElement('a');a.href=URL.createObjectURL(STD);a.download=SRCN.replace(/\.docx$/i,'')+'_chuan-739.docx';
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+};
+
 render();
 </script>
 </body>
